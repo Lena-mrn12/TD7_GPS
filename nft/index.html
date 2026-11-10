@@ -61,21 +61,21 @@
     arjs="trackingMethod: best; sourceType: webcam; debugUIEnabled: false;">
 
     <a-assets>
-      <video id="gif" src="assets/porte_rose.mp4" preload="auto" autoplay loop muted
+      <video id="gif" src="assets/robe_rose.mp4" preload="auto" autoplay loop muted
              playsinline webkit-playsinline crossorigin="anonymous"></video>
     </a-assets>
 
     <!-- url = chemin vers a.fset / a.fset3 / a.iset, SANS extension -->
-    <a-nft id="marqueur" type="nft" url="https://lena-mrn12.github.io/TD7_GPS/nft/assets/a"
+    <a-nft id="marqueur" type="nft" url="https://lena-mrn12.github.io/TD7_GPS/nft/assets/panneau"
       smooth="true" smoothCount="15" smoothTolerance=".01" smoothThreshold="5">
     </a-nft>
 
     <!-- le GIF suit le marqueur via le filtre anti-tremblement -->
     <a-entity stabilise="cible: #marqueur">
-        <!-- le GIF (converti en vidéo) posé à plat sur la porte -->
+        <!-- le GIF (converti en vidéo) posé à plat sur le panneau -->
         <a-video src="#gif"
-          width="339" height="452"
-          position="169 0 -226"
+          width="360" height="320"
+          position="175 0 -169"
           rotation="-90 0 0">
         </a-video>
     </a-entity>
