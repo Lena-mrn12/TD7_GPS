@@ -5,6 +5,43 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <script src="https://cdn.jsdelivr.net/npm/aframe@1.3.0/dist/aframe-master.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@ar-js-org/ar.js@3.4.5/aframe/build/aframe-ar-nft.js"></script>
+  <script>
+    // Filtre anti-tremblement : l'entité suit le marqueur en douceur
+    // et ignore les micro-mouvements du suivi.
+    AFRAME.registerComponent('stabilise', {
+      schema: {
+        cible:     { type: 'selector' },
+        lissage:   { default: 0.15 },  // vitesse de suivi quand on bouge vraiment
+        zoneMorte: { default: 0.03 },  // mouvements < 3 % de la distance ignorés
+        angleMort: { default: 3 }      // rotations < 3 degrés ignorées
+      },
+      init() {
+        this.p = new THREE.Vector3(); this.q = new THREE.Quaternion(); this.s = new THREE.Vector3();
+        this.pret = false; this.vu = false;
+        this.el.object3D.visible = false;
+        this.data.cible.addEventListener('markerFound', () => { this.vu = true; });
+        this.data.cible.addEventListener('markerLost',  () => { this.vu = false; this.pret = false; });
+      },
+      tick() {
+        const t = this.data.cible.object3D, o = this.el.object3D;
+        if (!this.vu && !t.visible) { o.visible = false; return; }
+        t.updateMatrixWorld(true);
+        t.matrixWorld.decompose(this.p, this.q, this.s);
+        if (!this.pret) {
+          o.position.copy(this.p); o.quaternion.copy(this.q); o.scale.copy(this.s);
+          this.pret = true; o.visible = true; return;
+        }
+        o.visible = true;
+        const dist = this.p.length() || 1;
+        const dp = o.position.distanceTo(this.p) / dist;
+        const da = o.quaternion.angleTo(this.q) * 180 / Math.PI;
+        // gros mouvement : on suit ; petit tremblement : on bouge à peine
+        o.position.lerp(this.p, dp > this.data.zoneMorte ? this.data.lissage : 0.01);
+        o.quaternion.slerp(this.q, da > this.data.angleMort ? this.data.lissage : 0.01);
+        o.scale.copy(this.s);
+      }
+    });
+  </script>
   <style>
     .arjs-loader {
       height: 100%; width: 100%; position: absolute; top: 0; left: 0;
@@ -29,15 +66,19 @@
     </a-assets>
 
     <!-- url = chemin vers a.fset / a.fset3 / a.iset, SANS extension -->
-    <a-nft type="nft" url="https://lena-mrn12.github.io/TD7_GPS/nft/assets/a"
-      smooth="true" smoothCount="30" smoothTolerance=".02" smoothThreshold="8">
-      <!-- le GIF (converti en vidéo) posé à plat sur la porte -->
-      <a-video src="#gif"
-        width="339" height="452"
-        position="169 0 -226"
-        rotation="-90 0 0">
-      </a-video>
+    <a-nft id="marqueur" type="nft" url="https://lena-mrn12.github.io/TD7_GPS/nft/assets/a"
+      smooth="true" smoothCount="15" smoothTolerance=".01" smoothThreshold="5">
     </a-nft>
+
+    <!-- le GIF suit le marqueur via le filtre anti-tremblement -->
+    <a-entity stabilise="cible: #marqueur">
+        <!-- le GIF (converti en vidéo) posé à plat sur la porte -->
+        <a-video src="#gif"
+          width="339" height="452"
+          position="169 0 -226"
+          rotation="-90 0 0">
+        </a-video>
+    </a-entity>
 
     <a-entity camera></a-entity>
   </a-scene>
