@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <script src="https://cdn.jsdelivr.net/gh/aframevr/aframe@1c2407b26c61958baa93967b5412487cd94b290b/dist/aframe-master.min.js"></script>
-  <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar-nft.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/aframe@1.3.0/dist/aframe-master.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@ar-js-org/ar.js@3.4.5/aframe/build/aframe-ar-nft.js"></script>
   <style>
     .arjs-loader {
       height: 100%; width: 100%; position: absolute; top: 0; left: 0;
@@ -24,7 +24,7 @@
     arjs="trackingMethod: best; sourceType: webcam; debugUIEnabled: false;">
 
     <!-- url = chemin vers a.fset / a.fset3 / a.iset, SANS extension -->
-    <a-nft type="nft" url="assets/a"
+    <a-nft type="nft" url="https://lena-mrn12.github.io/TD7_GPS/nft/assets/a"
       smooth="true" smoothCount="10" smoothTolerance=".01" smoothThreshold="5">
       <a-entity
         gltf-model="assets/asset.glb"
