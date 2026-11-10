@@ -9,17 +9,24 @@
   <script src="https://cdn.jsdelivr.net/npm/aframe@1.3.0/dist/aframe-master.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@ar-js-org/ar.js@3.4.5/aframe/build/aframe-ar-nft.js"></script>
   <script>
-    // Filtre anti-tremblement : l'entité suit le marqueur en douceur
-    // et ignore les micro-mouvements du suivi.
+    // Filtre anti-tremblement centré sur le GIF :
+    // - on lisse la position du CENTRE du GIF (pas du coin de l'image),
+    //   donc pas de décalage quand on est loin ;
+    // - lissage adaptatif : fort sur les petits tremblements, rapide sur les vrais
+    //   mouvements, et il rattrape toujours la bonne position (aucun écart résiduel).
     AFRAME.registerComponent('stabilise', {
       schema: {
-        cible:     { type: 'selector' },
-        lissage:   { default: 0.15 },  // vitesse de suivi quand on bouge vraiment
-        zoneMorte: { default: 0.03 },  // mouvements < 3 % de la distance ignorés
-        angleMort: { default: 3 }      // rotations < 3 degrés ignorées
+        cible:    { type: 'selector' },
+        decalage: { type: 'vec3', default: { x: 0, y: 0, z: 0 } },  // centre du GIF dans le repère de l'image
+        rotation: { type: 'vec3', default: { x: 0, y: 0, z: 0 } }   // orientation du GIF (degrés)
       },
       init() {
         this.p = new THREE.Vector3(); this.q = new THREE.Quaternion(); this.s = new THREE.Vector3();
+        this.m = new THREE.Matrix4(); this.off = new THREE.Matrix4();
+        const d = this.data, r = THREE.MathUtils.degToRad;
+        this.off.compose(new THREE.Vector3(d.decalage.x, d.decalage.y, d.decalage.z),
+                         new THREE.Quaternion().setFromEuler(new THREE.Euler(r(d.rotation.x), r(d.rotation.y), r(d.rotation.z))),
+                         new THREE.Vector3(1, 1, 1));
         this.pret = false; this.vu = false;
         this.el.object3D.visible = false;
         this.data.cible.addEventListener('markerFound', () => { this.vu = true; });
@@ -29,18 +36,18 @@
         const t = this.data.cible.object3D, o = this.el.object3D;
         if (!this.vu && !t.visible) { o.visible = false; return; }
         t.updateMatrixWorld(true);
-        t.matrixWorld.decompose(this.p, this.q, this.s);
+        this.m.multiplyMatrices(t.matrixWorld, this.off);   // pose du centre du GIF
+        this.m.decompose(this.p, this.q, this.s);
+        o.visible = true;
         if (!this.pret) {
           o.position.copy(this.p); o.quaternion.copy(this.q); o.scale.copy(this.s);
-          this.pret = true; o.visible = true; return;
+          this.pret = true; return;
         }
-        o.visible = true;
-        const dist = this.p.length() || 1;
-        const dp = o.position.distanceTo(this.p) / dist;
-        const da = o.quaternion.angleTo(this.q) * 180 / Math.PI;
-        // gros mouvement : on suit ; petit tremblement : on bouge à peine
-        o.position.lerp(this.p, dp > this.data.zoneMorte ? this.data.lissage : 0.01);
-        o.quaternion.slerp(this.q, da > this.data.angleMort ? this.data.lissage : 0.01);
+        const rel = o.position.distanceTo(this.p) / (this.p.length() || 1);  // écart relatif à la distance
+        const deg = o.quaternion.angleTo(this.q) * 180 / Math.PI;
+        const clamp = (v) => Math.min(0.6, Math.max(0.08, v));
+        o.position.lerp(this.p, clamp(0.08 + rel * 10));
+        o.quaternion.slerp(this.q, clamp(0.08 + deg * 0.05));
         o.scale.copy(this.s);
       }
     });
@@ -74,12 +81,10 @@
     </a-nft>
 
     <!-- le GIF suit le marqueur via le filtre anti-tremblement -->
-    <a-entity stabilise="cible: #marqueur">
+    <a-entity stabilise="cible: #marqueur; decalage: 175 0 -199; rotation: -90 0 0">
         <!-- le GIF (converti en vidéo) posé à plat sur le panneau -->
         <a-video src="#gif"
-          width="360" height="320"
-          position="175 0 -199"
-          rotation="-90 0 0">
+          width="360" height="320">
         </a-video>
     </a-entity>
 
