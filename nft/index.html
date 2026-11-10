@@ -23,18 +23,33 @@
     embedded
     arjs="trackingMethod: best; sourceType: webcam; debugUIEnabled: false;">
 
+    <a-assets>
+      <video id="gif" src="assets/porte.mp4" preload="auto" autoplay loop muted
+             playsinline webkit-playsinline crossorigin="anonymous"></video>
+    </a-assets>
+
     <!-- url = chemin vers a.fset / a.fset3 / a.iset, SANS extension -->
     <a-nft type="nft" url="https://lena-mrn12.github.io/TD7_GPS/nft/assets/a"
       smooth="true" smoothCount="10" smoothTolerance=".01" smoothThreshold="5">
-      <a-entity
-        gltf-model="assets/asset.glb"
-        scale="2 2 2"
-        position="50 150 0"
+      <!-- le GIF (converti en vidéo) posé à plat sur la porte -->
+      <a-video src="#gif"
+        width="163" height="143"
+        position="81 0 -108"
         rotation="-90 0 0">
-      </a-entity>
+      </a-video>
     </a-nft>
 
     <a-entity camera></a-entity>
   </a-scene>
+
+  <script>
+    // Les téléphones bloquent parfois la lecture automatique :
+    // on relance la vidéo quand l'image est détectée ou quand on touche l'écran.
+    const vid = document.querySelector('#gif');
+    const lancer = () => vid.play().catch(() => {});
+    window.addEventListener('click', lancer);
+    window.addEventListener('touchstart', lancer);
+    document.querySelector('a-nft').addEventListener('markerFound', lancer);
+  </script>
 </body>
 </html>
